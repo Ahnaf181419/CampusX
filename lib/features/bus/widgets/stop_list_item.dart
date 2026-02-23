@@ -6,11 +6,13 @@ import '../bus_data.dart';
 class StopListItem extends StatefulWidget {
   final BusStop stop;
   final bool isNotifyActive;
+  final void Function(bool) onNotifyToggled;
 
   const StopListItem({
     super.key,
     required this.stop,
     required this.isNotifyActive,
+    required this.onNotifyToggled,
   });
 
   @override
@@ -26,11 +28,24 @@ class _StopListItemState extends State<StopListItem> {
     _isActive = widget.isNotifyActive;
   }
 
-  void _toggle() => setState(() => _isActive = !_isActive);
+  void _toggle() {
+    setState(() => _isActive = !_isActive);
+    widget.onNotifyToggled(_isActive);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final bool isPassed = widget.stop.isActive;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: isPassed ? AppColors.green : Colors.transparent,
+            width: 4,
+          ),
+        ),
+      ),
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
@@ -42,6 +57,7 @@ class _StopListItemState extends State<StopListItem> {
                   widget.stop.name,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: isPassed ? AppColors.ash : AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -69,6 +85,7 @@ class _StopListItemState extends State<StopListItem> {
             ],
           ),
         ],
+      ),
       ),
     );
   }

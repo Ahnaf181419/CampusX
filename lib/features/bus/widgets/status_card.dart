@@ -5,8 +5,9 @@ import '../bus_data.dart';
 
 class StatusCard extends StatelessWidget {
   final BusRouteData data;
+  final bool isRunning;
 
-  const StatusCard({super.key, required this.data});
+  const StatusCard({super.key, required this.data, required this.isRunning});
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +50,16 @@ class StatusCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
                       size: 14,
-                      color: AppColors.green,
+                      color: isRunning ? AppColors.green : AppColors.ash,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Running',
+                      isRunning ? 'Running' : 'Stopped',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.green,
+                        color: isRunning ? AppColors.green : AppColors.ash,
                       ),
                     ),
                   ],

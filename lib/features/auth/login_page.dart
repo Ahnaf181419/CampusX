@@ -76,10 +76,10 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Welcome Champ! Please sign in to continue...',
+                'Welcome to CampusX! Please sign in to continue...',
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.ash),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 80),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(

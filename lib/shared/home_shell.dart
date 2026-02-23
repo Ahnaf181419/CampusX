@@ -15,12 +15,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
-  static const _titles = [
-    'Bus Notification',
-    'Notice Board',
-    'Event Page',
-    'Rooms',
-  ];
+  static const _titles = ['Bus Status', 'Notice Board', 'Event Page', 'Rooms'];
 
   static const _pages = [BusPage(), NoticesPage(), EventsPage(), RoomsPage()];
 

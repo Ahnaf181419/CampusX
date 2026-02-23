@@ -3,6 +3,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/login_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const CampusXApp());
 }
 
