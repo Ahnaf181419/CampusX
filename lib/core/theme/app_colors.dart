@@ -13,4 +13,12 @@ class AppColors {
   static const Color backgroundGrey = Color(0xFFF5F5F5);
   static const Color buttonInactive = Color(0xFFEEEEEE);
   static const Color amber = Color(0xFFF57C00);
+
+  static const Color chipSelectedBg = Color(0xFF1A1A1A);
+
+  static const Color priorityHigh = Color(0xFFE53935);
+
+  static const Color priorityLowBg = Color(0xFFFFFFFF);
+
+  static const Color statusBadgeBg = Color(0xFFF0F0F0);
 }

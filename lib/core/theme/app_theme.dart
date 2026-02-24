@@ -20,8 +20,8 @@ class AppTheme {
       foregroundColor: AppColors.black,
       shape: Border(
         bottom: BorderSide(
-          color: AppColors.ash, // Or any color you prefer
-          width: 0.5, // Set to a low value for a "thin" line
+          color: AppColors.ash, 
+          width: 0.5, 
         ),
       ),
       elevation: 0,
