@@ -8,13 +8,13 @@ class AppTextStyles {
   static const String _font = 'Roboto';
 
   static const TextStyle headerLarge = TextStyle(
-    fontFamily: _mono,
+    fontFamily: _font,
     fontSize: 48,
     fontWeight: FontWeight.bold,
   );
 
   static const TextStyle headerMedium = TextStyle(
-    fontFamily: _mono,
+    fontFamily: _font,
     fontSize: 24,
     fontWeight: FontWeight.bold,
   );
