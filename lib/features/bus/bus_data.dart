@@ -30,7 +30,7 @@ class BusData {
   BusData._();
 
   static const BusRouteData currentRoute = BusRouteData(
-    busTitle: 'Padma Bus Started',
+    busTitle: 'Padma Bus',
     routeDirection: 'To University',
     destination: 'towards Bangla School',
 

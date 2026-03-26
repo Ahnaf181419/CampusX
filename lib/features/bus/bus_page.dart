@@ -16,6 +16,9 @@ class BusPage extends StatefulWidget {
 }
 
 class _BusPageState extends State<BusPage> {
+  static const _busNames = ['Padma Bus', 'Meghna Bus', 'Karnaphuli Bus'];
+  String _selectedBus = _busNames.first;
+
   bool _isbusRunning = false;
   List<BusStop> _routeStops = BusData.currentRoute.routeStops;
   final List<bool> _notifyPrefs = List.filled(BusData.currentRoute.routeStops.length, false);
@@ -104,6 +107,43 @@ class _BusPageState extends State<BusPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.blackShadow,
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedBus,
+                    isExpanded: true,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    style: AppTextStyles.headerSmall.copyWith(
+                      color: AppColors.black,
+                    ),
+                    dropdownColor: AppColors.white,
+                    items: _busNames
+                        .map((name) => DropdownMenuItem(
+                              value: name,
+                              child: Text(name),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedBus = value);
+                      }
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               AdminControl(isbusRunning: _isbusRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
               const SizedBox(height: 16),
               StatusCard(data: BusData.currentRoute, isRunning: _isbusRunning),
