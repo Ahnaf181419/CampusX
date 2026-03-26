@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'bus_data.dart';
+import 'bus_routes.dart';
 import 'widgets/status_card.dart';
 import 'widgets/route_timeline.dart';
 import 'widgets/stop_list_item.dart';
@@ -16,12 +17,11 @@ class BusPage extends StatefulWidget {
 }
 
 class _BusPageState extends State<BusPage> {
-  static const _busNames = ['Padma Bus', 'Meghna Bus', 'Karnaphuli Bus'];
-  String _selectedBus = _busNames.first;
+  String _selectedBus = allBusRoutes.first.busTitle;
 
   bool _isbusRunning = false;
-  List<BusStop> _routeStops = BusData.currentRoute.routeStops;
-  final List<bool> _notifyPrefs = List.filled(BusData.currentRoute.routeStops.length, false);
+  List<BusStop> _routeStops = allBusRoutes.first.routeStops;
+  final List<bool> _notifyPrefs = List.filled(allBusRoutes.first.routeStops.length, false);
 
   final _player = AudioPlayer();
 
@@ -80,17 +80,18 @@ class _BusPageState extends State<BusPage> {
   }
 
   void _handleResetRoute() {
+    final route = allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus);
     setState(() {
       _routeStops = [
         BusStop(
-          name: BusData.currentRoute.routeStops[0].name,
-          estimatedMinutes: BusData.currentRoute.routeStops[0].estimatedMinutes,
+          name: route.routeStops[0].name,
+          estimatedMinutes: route.routeStops[0].estimatedMinutes,
           isActive: true,
         ),
-        for (int i = 1; i < BusData.currentRoute.routeStops.length; i++)
+        for (int i = 1; i < route.routeStops.length; i++)
           BusStop(
-            name: BusData.currentRoute.routeStops[i].name,
-            estimatedMinutes: BusData.currentRoute.routeStops[i].estimatedMinutes,
+            name: route.routeStops[i].name,
+            estimatedMinutes: route.routeStops[i].estimatedMinutes,
             isActive: false,
           ),
       ];
@@ -129,10 +130,10 @@ class _BusPageState extends State<BusPage> {
                       color: AppColors.black,
                     ),
                     dropdownColor: AppColors.white,
-                    items: _busNames
-                        .map((name) => DropdownMenuItem(
-                              value: name,
-                              child: Text(name),
+                    items: allBusRoutes
+                        .map((route) => DropdownMenuItem(
+                              value: route.busTitle,
+                              child: Text(route.busTitle),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -146,7 +147,7 @@ class _BusPageState extends State<BusPage> {
               const SizedBox(height: 16),
               AdminControl(isbusRunning: _isbusRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
               const SizedBox(height: 16),
-              StatusCard(data: BusData.currentRoute, isRunning: _isbusRunning),
+              StatusCard(data: allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus), isRunning: _isbusRunning),
               const SizedBox(height: 16),
               RouteTimeline(stoppages: _routeStops),
               const SizedBox(height: 16),
