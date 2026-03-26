@@ -42,7 +42,7 @@ class AdminControl extends StatelessWidget {
                   Icons
                       .admin_panel_settings, 
                   size: 24,
-                  color: isbusRunning ? Colors.green : AppColors.redAccent,
+                  color: isbusRunning ? AppColors.black : AppColors.ash,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -58,7 +58,7 @@ class AdminControl extends StatelessWidget {
             const Divider(
               height: 32,
               thickness: 1,
-              color: Colors.black12,
+              color: AppColors.ashLight,
             ),
             
             Row(
@@ -77,8 +77,8 @@ class AdminControl extends StatelessWidget {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isbusRunning
-                          ? AppColors.redAccent
-                          : Colors.green,
+                          ? AppColors.ash
+                          : AppColors.black,
                       foregroundColor:
                           AppColors.white, 
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -104,8 +104,8 @@ class AdminControl extends StatelessWidget {
                       backgroundColor: AppColors.black,
                       foregroundColor: AppColors.white,
                       
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      disabledForegroundColor: Colors.grey.shade600,
+                      disabledBackgroundColor: AppColors.buttonInactive,
+                      disabledForegroundColor: AppColors.ash,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -127,9 +127,9 @@ class AdminControl extends StatelessWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reset Route'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.redAccent, 
+                  foregroundColor: AppColors.ash, 
                   side: BorderSide(
-                    color: AppColors.redAccent,
+                    color: AppColors.ash,
                   ), // Soft red border
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

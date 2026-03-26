@@ -3,22 +3,23 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const Color black = Color(0xFF060D0D);
-  static const Color white = Color(0xFFFAFAFA);
-  static const Color ash = Color(0xFF9E9E9E);
-  static const Color ashLight = Color(0xFFD3D3D3);
-  static const Color redAccent = Colors.redAccent;
-  static const Color green = Color(0xFF388B3B);
-  static const Color blackShadow = Color(0x14000000);
-  static const Color backgroundGrey = Color(0xFFF5F5F5);
-  static const Color buttonInactive = Color(0xFFEEEEEE);
-  static const Color amber = Color(0xFFF57C00);
+  // Core identity
+  static const Color black = Color(0xFF162032);
+  static const Color white = Color(0xFFFAFBFC);
+  static const Color ash = Color(0xFF6B7B8D);
+  static const Color ashLight = Color(0xFFCED5DC);
+  static const Color blackShadow = Color(0x18162032);
 
-  static const Color chipSelectedBg = Color(0xFF1A1A1A);
+  // Surfaces 
+  static const Color backgroundGrey = Color(0xFFF0F3F6);
+  static const Color buttonInactive = Color(0xFFE4E9EE);
 
-  static const Color priorityHigh = Color(0xFFE53935);
+  // Semantic: Priority  
+  static const Color priorityHigh = Color(0xFFD64045);
+  static const Color priorityMid = Color(0xFFCF8B2D);
+  static const Color priorityLowBg = Color(0xFFFAFBFC);
 
-  static const Color priorityLowBg = Color(0xFFFFFFFF);
-
-  static const Color statusBadgeBg = Color(0xFFF0F0F0);
+  // Interactive 
+  static const Color chipSelectedBg = Color(0xFF162032);
+  static const Color statusBadgeBg = Color(0xFFE4E9EE);
 }

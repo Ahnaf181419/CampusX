@@ -16,7 +16,7 @@ class RoomStatusIndicator extends StatelessWidget {
           'Available',
           style: AppTextStyles.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.green,
+            color: AppColors.black,
           ),
         );
 
@@ -25,7 +25,7 @@ class RoomStatusIndicator extends StatelessWidget {
           'Booked Soon',
           style: AppTextStyles.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.amber,
+            color: AppColors.ash,
           ),
         );
 
@@ -33,7 +33,7 @@ class RoomStatusIndicator extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: AppColors.redAccent,
+            color: AppColors.black,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(

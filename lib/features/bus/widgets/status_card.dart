@@ -53,13 +53,13 @@ class StatusCard extends StatelessWidget {
                     Icon(
                       Icons.access_time,
                       size: 14,
-                      color: isRunning ? AppColors.green : AppColors.ash,
+                      color: isRunning ? AppColors.black : AppColors.ash,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       isRunning ? 'Running' : 'Stopped',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: isRunning ? AppColors.green : AppColors.ash,
+                        color: isRunning ? AppColors.black : AppColors.ash,
                       ),
                     ),
                   ],

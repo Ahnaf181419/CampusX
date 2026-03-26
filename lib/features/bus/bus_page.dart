@@ -57,7 +57,7 @@ class _BusPageState extends State<BusPage> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.directions_bus, color: Colors.white),
+              Icon(Icons.directions_bus, color: AppColors.white),
               const SizedBox(width: 8),
               Text('Bus reached ${_routeStops[nextIndex].name}'),
             ],

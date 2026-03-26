@@ -40,7 +40,7 @@ class _StopListItemState extends State<StopListItem> {
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
-            color: isPassed ? AppColors.green : Colors.transparent,
+            color: isPassed ? AppColors.black : Colors.transparent,
             width: 4,
           ),
         ),

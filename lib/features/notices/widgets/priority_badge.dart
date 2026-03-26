@@ -10,7 +10,7 @@ import 'package:campus_x/features/notices/models/notice_model.dart';
 /// Displays a priority badge that adapts its style to the supplied [priority].
 ///
 /// - [NoticePriority.high]   → red pill with bold white "High" text.
-/// - [NoticePriority.medium] → amber pill with bold white "Medium" text.
+/// - [NoticePriority.medium] → priorityMid pill with bold white "Medium" text.
 /// - [NoticePriority.low]    → outlined white pill with gray "Low" text.
 class PriorityBadge extends StatelessWidget {
   const PriorityBadge({super.key, required this.priority});
@@ -32,11 +32,11 @@ class PriorityBadge extends StatelessWidget {
           ),
         );
 
-      // ── Medium priority – amber pill badge ──────────────────
+      // ── Medium priority – priorityMid pill badge ──────────────────
       case NoticePriority.medium:
         return _PillBadge(
           label: 'Medium',
-          backgroundColor: AppColors.amber,
+          backgroundColor: AppColors.priorityMid,
           borderColor: Colors.transparent,
           textStyle: AppTextStyles.bodySmall.copyWith(
             fontWeight: FontWeight.bold,
