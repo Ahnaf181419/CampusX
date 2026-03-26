@@ -9,6 +9,18 @@ import 'widgets/route_timeline.dart';
 import 'widgets/stop_list_item.dart';
 import 'widgets/admin_control.dart';
 
+class _BusState {
+  bool isRunning;
+  List<BusStop> routeStops;
+  List<bool> notifyPrefs;
+
+  _BusState({
+    required this.isRunning,
+    required this.routeStops,
+    required this.notifyPrefs,
+  });
+}
+
 class BusPage extends StatefulWidget {
   const BusPage({super.key});
 
@@ -17,13 +29,29 @@ class BusPage extends StatefulWidget {
 }
 
 class _BusPageState extends State<BusPage> {
-  String _selectedBus = allBusRoutes.first.busTitle;
+  late final Map<String, _BusState> _busStates;
+  late String _selectedBus;
 
-  bool _isbusRunning = false;
-  List<BusStop> _routeStops = allBusRoutes.first.routeStops;
-  final List<bool> _notifyPrefs = List.filled(allBusRoutes.first.routeStops.length, false);
+  _BusState get _current => _busStates[_selectedBus]!;
+
+  BusRouteData get _selectedRouteData =>
+      allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus);
 
   final _player = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _busStates = {
+      for (final route in allBusRoutes)
+        route.busTitle: _BusState(
+          isRunning: false,
+          routeStops: List.of(route.routeStops),
+          notifyPrefs: List.filled(route.routeStops.length, false),
+        ),
+    };
+    _selectedBus = allBusRoutes.first.busTitle;
+  }
 
   @override
   void dispose() {
@@ -36,25 +64,26 @@ class _BusPageState extends State<BusPage> {
   }
 
   void _handleNotifyToggled(int index, bool value) {
-    setState(() => _notifyPrefs[index] = value);
+    setState(() => _current.notifyPrefs[index] = value);
   }
 
   void _handleNextStoppage() {
-    final nextIndex = _routeStops.indexWhere((s) => !s.isActive);
+    final stops = _current.routeStops;
+    final nextIndex = stops.indexWhere((s) => !s.isActive);
     if (nextIndex == -1) return;
 
     setState(() {
-      _routeStops = [
-        for (int i = 0; i < _routeStops.length; i++)
+      _current.routeStops = [
+        for (int i = 0; i < stops.length; i++)
           BusStop(
-            name: _routeStops[i].name,
-            estimatedMinutes: _routeStops[i].estimatedMinutes,
+            name: stops[i].name,
+            estimatedMinutes: stops[i].estimatedMinutes,
             isActive: i <= nextIndex,
           ),
       ];
     });
 
-    if (_notifyPrefs[nextIndex]) {
+    if (_current.notifyPrefs[nextIndex]) {
       _playNotifySound();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -62,7 +91,7 @@ class _BusPageState extends State<BusPage> {
             children: [
               Icon(Icons.directions_bus, color: AppColors.white),
               const SizedBox(width: 8),
-              Text('Bus reached ${_routeStops[nextIndex].name}'),
+              Text('Bus reached ${_current.routeStops[nextIndex].name}'),
             ],
           ),
           backgroundColor: AppColors.black,
@@ -75,14 +104,14 @@ class _BusPageState extends State<BusPage> {
 
   void _handleToggle() {
     setState(() {
-      _isbusRunning = !_isbusRunning;
+      _current.isRunning = !_current.isRunning;
     });
   }
 
   void _handleResetRoute() {
-    final route = allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus);
+    final route = _selectedRouteData;
     setState(() {
-      _routeStops = [
+      _current.routeStops = [
         BusStop(
           name: route.routeStops[0].name,
           estimatedMinutes: route.routeStops[0].estimatedMinutes,
@@ -145,11 +174,11 @@ class _BusPageState extends State<BusPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              AdminControl(isbusRunning: _isbusRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
+              AdminControl(isbusRunning: _current.isRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
               const SizedBox(height: 16),
-              StatusCard(data: allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus), isRunning: _isbusRunning),
+              StatusCard(data: _selectedRouteData, isRunning: _current.isRunning),
               const SizedBox(height: 16),
-              RouteTimeline(stoppages: _routeStops),
+              RouteTimeline(stoppages: _current.routeStops),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -159,8 +188,9 @@ class _BusPageState extends State<BusPage> {
                 ),
               ),
               _UpcomingStopsCard(
-                stops: _routeStops,
-                notifyPrefs: _notifyPrefs,
+                busKey: _selectedBus,
+                stops: _current.routeStops,
+                notifyPrefs: _current.notifyPrefs,
                 onNotifyToggled: _handleNotifyToggled,
               ),
             ],
@@ -172,11 +202,13 @@ class _BusPageState extends State<BusPage> {
 }
 
 class _UpcomingStopsCard extends StatelessWidget {
+  final String busKey;
   final List<BusStop> stops;
   final List<bool> notifyPrefs;
   final void Function(int, bool) onNotifyToggled;
 
   const _UpcomingStopsCard({
+    required this.busKey,
     required this.stops,
     required this.notifyPrefs,
     required this.onNotifyToggled,
@@ -200,6 +232,7 @@ class _UpcomingStopsCard extends StatelessWidget {
         children: [
           for (int i = 0; i < stops.length; i++) ...[
             StopListItem(
+              key: ValueKey('${busKey}_$i'),
               stop: stops[i],
               isNotifyActive: notifyPrefs[i],
               onNotifyToggled: (val) => onNotifyToggled(i, val),
