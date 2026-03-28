@@ -4,6 +4,7 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
+  // ignore: unused_field
   static const String _mono = 'ShareTechMono';
   static const String _font = 'Roboto';
 
