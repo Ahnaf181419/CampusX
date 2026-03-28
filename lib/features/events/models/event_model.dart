@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum EventStatus { ongoing, upcoming, completed }
 
 class EventModel {
@@ -11,60 +13,42 @@ class EventModel {
   });
 
   final String id;
-
   final String title;
-
   final String date;
-
   final String? time;
-
   final String? description;
-
   final EventStatus status;
+
+  factory EventModel.fromMap(String id, Map<String, dynamic> data) {
+    return EventModel(
+      id: id,
+      title: data['title'] ?? '',
+      date: data['date'] ?? '',
+      time: data['time'],
+      description: data['description'],
+      status: _parseStatus(data['status'] ?? 'upcoming'),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'date': date,
+      'time': time,
+      'description': description,
+      'status': status.name,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+  }
+
+  static EventStatus _parseStatus(String status) {
+    switch (status) {
+      case 'ongoing':
+        return EventStatus.ongoing;
+      case 'completed':
+        return EventStatus.completed;
+      default:
+        return EventStatus.upcoming;
+    }
+  }
 }
-
-const EventModel kOngoingEvent = EventModel(
-  id: 'ongoing_1',
-  title: 'Annual Campus Tech Fest 2024',
-  date: 'November 15, 2024',
-  time: '09:00 AM - 05:00 PM',
-  description:
-      'Join us for the biggest technology event of the year! Explore '
-      'workshops on AI, web development, cybersecurity, and participate in '
-      'exciting coding competitions. Network with industry experts and '
-      'discover career opportunities.',
-  status: EventStatus.ongoing,
-);
-
-const List<EventModel> kPastEvents = [
-  EventModel(
-    id: 'past_1',
-    title: "Freshers' Orientation Day",
-    date: 'August 28, 2024',
-    status: EventStatus.completed,
-  ),
-  EventModel(
-    id: 'past_2',
-    title: 'University Blood Drive',
-    date: 'September 10, 2024',
-    status: EventStatus.completed,
-  ),
-  EventModel(
-    id: 'past_3',
-    title: 'Campus Cleanup Drive',
-    date: 'September 25, 2024',
-    status: EventStatus.completed,
-  ),
-  EventModel(
-    id: 'past_4',
-    title: 'Inter-Department Sports Meet',
-    date: 'October 05, 2024',
-    status: EventStatus.completed,
-  ),
-  EventModel(
-    id: 'past_5',
-    title: 'Guest Lecture: Future of AI',
-    date: 'October 18, 2024',
-    status: EventStatus.completed,
-  ),
-];

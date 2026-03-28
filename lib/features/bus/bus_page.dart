@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/repositories/bus_status_repository.dart';
 import '../../services/auth_service.dart';
 import 'bus_data.dart';
 import 'bus_routes.dart';
@@ -9,18 +10,6 @@ import 'widgets/status_card.dart';
 import 'widgets/route_timeline.dart';
 import 'widgets/stop_list_item.dart';
 import 'widgets/admin_control.dart';
-
-class _BusState {
-  bool isRunning;
-  List<BusStop> routeStops;
-  List<bool> notifyPrefs;
-
-  _BusState({
-    required this.isRunning,
-    required this.routeStops,
-    required this.notifyPrefs,
-  });
-}
 
 class BusPage extends StatefulWidget {
   const BusPage({super.key});
@@ -30,27 +19,26 @@ class BusPage extends StatefulWidget {
 }
 
 class _BusPageState extends State<BusPage> {
-  late final Map<String, _BusState> _busStates;
+  final BusStatusRepository _repository = BusStatusRepository();
   late String _selectedBus;
 
-  _BusState get _current => _busStates[_selectedBus]!;
+  // Notification prefs are per-device, keyed by bus title
+  final Map<String, List<bool>> _notifyPrefs = {};
+
+  final _player = AudioPlayer();
 
   BusRouteData get _selectedRouteData =>
       allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus);
 
-  final _player = AudioPlayer();
+  List<bool> get _currentNotifyPrefs =>
+      _notifyPrefs.putIfAbsent(
+        _selectedBus,
+        () => List.filled(_selectedRouteData.routeStops.length, false),
+      );
 
   @override
   void initState() {
     super.initState();
-    _busStates = {
-      for (final route in allBusRoutes)
-        route.busTitle: _BusState(
-          isRunning: false,
-          routeStops: List.of(route.routeStops),
-          notifyPrefs: List.filled(route.routeStops.length, false),
-        ),
-    };
     _selectedBus = allBusRoutes.first.busTitle;
   }
 
@@ -60,76 +48,78 @@ class _BusPageState extends State<BusPage> {
     super.dispose();
   }
 
+  List<BusStop> _buildStops(int currentStopIndex) {
+    final route = _selectedRouteData;
+    return [
+      for (int i = 0; i < route.routeStops.length; i++)
+        BusStop(
+          name: route.routeStops[i].name,
+          estimatedMinutes: route.routeStops[i].estimatedMinutes,
+          isActive: i <= currentStopIndex,
+        ),
+    ];
+  }
+
   Future<void> _playNotifySound() async {
     await _player.play(AssetSource('sounds/notify.mp3'));
   }
 
   void _handleNotifyToggled(int index, bool value) {
-    setState(() => _current.notifyPrefs[index] = value);
+    setState(() => _currentNotifyPrefs[index] = value);
   }
 
-  void _handleNextStoppage() {
-    final stops = _current.routeStops;
-    final nextIndex = stops.indexWhere((s) => !s.isActive);
-    if (nextIndex == -1) return;
+  Future<void> _handleNextStoppage(int currentStopIndex) async {
+    final route = _selectedRouteData;
+    final nextIndex = currentStopIndex + 1;
+    if (nextIndex >= route.routeStops.length) return;
 
-    setState(() {
-      _current.routeStops = [
-        for (int i = 0; i < stops.length; i++)
-          BusStop(
-            name: stops[i].name,
-            estimatedMinutes: stops[i].estimatedMinutes,
-            isActive: i <= nextIndex,
-          ),
-      ];
-    });
+    await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: true,
+      currentStopIndex: nextIndex,
+    );
 
-    if (_current.notifyPrefs[nextIndex]) {
+    if (_currentNotifyPrefs[nextIndex]) {
       _playNotifySound();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.directions_bus, color: AppColors.white),
-              const SizedBox(width: 8),
-              Text('Bus reached ${_current.routeStops[nextIndex].name}'),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.directions_bus, color: AppColors.white),
+                const SizedBox(width: 8),
+                Text('Bus reached ${route.routeStops[nextIndex].name}'),
+              ],
+            ),
+            backgroundColor: AppColors.black,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
           ),
-          backgroundColor: AppColors.black,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+        );
+      }
     }
   }
 
-  void _handleToggle() {
-    setState(() {
-      _current.isRunning = !_current.isRunning;
-    });
+  Future<void> _handleToggle(bool currentlyRunning, int currentStopIndex) async {
+    await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: !currentlyRunning,
+      currentStopIndex: currentStopIndex,
+    );
   }
 
-  void _handleResetRoute() {
-    final route = _selectedRouteData;
-    setState(() {
-      _current.routeStops = [
-        BusStop(
-          name: route.routeStops[0].name,
-          estimatedMinutes: route.routeStops[0].estimatedMinutes,
-          isActive: true,
-        ),
-        for (int i = 1; i < route.routeStops.length; i++)
-          BusStop(
-            name: route.routeStops[i].name,
-            estimatedMinutes: route.routeStops[i].estimatedMinutes,
-            isActive: false,
-          ),
-      ];
-    });
+  Future<void> _handleResetRoute() async {
+    await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: false,
+      currentStopIndex: 0,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = AuthService().isAdmin();
+
     return Scaffold(
       backgroundColor: AppColors.backgroundGrey,
       body: SafeArea(
@@ -138,6 +128,7 @@ class _BusPageState extends State<BusPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Bus selector dropdown
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.white,
@@ -180,33 +171,50 @@ class _BusPageState extends State<BusPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (AuthService().isAdmin())
-                AdminControl(
-                  isbusRunning: _current.isRunning,
-                  onToggle: _handleToggle,
-                  onNextStoppage: _handleNextStoppage,
-                  onResetRoute: _handleResetRoute,
-                ),
-              if (AuthService().isAdmin()) const SizedBox(height: 16),
-              StatusCard(
-                data: _selectedRouteData,
-                isRunning: _current.isRunning,
-              ),
-              const SizedBox(height: 16),
-              RouteTimeline(stoppages: _current.routeStops),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  'Bus Stoppage List',
-                  style: AppTextStyles.headerSmall,
-                ),
-              ),
-              _UpcomingStopsCard(
-                busKey: _selectedBus,
-                stops: _current.routeStops,
-                notifyPrefs: _current.notifyPrefs,
-                onNotifyToggled: _handleNotifyToggled,
+
+              // Stream the live status from Firestore
+              StreamBuilder<Map<String, dynamic>?>(
+                stream: _repository.getBusStatus(_selectedBus),
+                builder: (context, snapshot) {
+                  final data = snapshot.data;
+                  final isRunning = data?['isRunning'] as bool? ?? false;
+                  final currentStopIndex = data?['currentStopIndex'] as int? ?? 0;
+                  final stops = _buildStops(currentStopIndex);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isAdmin)
+                        AdminControl(
+                          isbusRunning: isRunning,
+                          onToggle: () => _handleToggle(isRunning, currentStopIndex),
+                          onNextStoppage: () => _handleNextStoppage(currentStopIndex),
+                          onResetRoute: _handleResetRoute,
+                        ),
+                      if (isAdmin) const SizedBox(height: 16),
+                      StatusCard(
+                        data: _selectedRouteData,
+                        isRunning: isRunning,
+                      ),
+                      const SizedBox(height: 16),
+                      RouteTimeline(stoppages: stops),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Bus Stoppage List',
+                          style: AppTextStyles.headerSmall,
+                        ),
+                      ),
+                      _UpcomingStopsCard(
+                        busKey: _selectedBus,
+                        stops: stops,
+                        notifyPrefs: _currentNotifyPrefs,
+                        onNotifyToggled: _handleNotifyToggled,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
