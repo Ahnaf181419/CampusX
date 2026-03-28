@@ -4,6 +4,7 @@ class Notice {
   final String body;
   final DateTime timestamp;
   final String author;
+  final String priority;
 
   Notice({
     required this.id,
@@ -11,6 +12,7 @@ class Notice {
     required this.body,
     required this.timestamp,
     required this.author,
+    this.priority = 'medium',
   });
 
   factory Notice.fromMap(String id, Map<String, dynamic> data) {
@@ -20,6 +22,7 @@ class Notice {
       body: data['body'] ?? '',
       timestamp: data['timestamp']?.toDate() ?? DateTime.now(),
       author: data['author'] ?? '',
+      priority: data['priority'] ?? 'medium',
     );
   }
 
@@ -29,6 +32,7 @@ class Notice {
       'body': body,
       'timestamp': timestamp,
       'author': author,
+      'priority': priority,
     };
   }
 }

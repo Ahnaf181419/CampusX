@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../services/auth_service.dart';
 import 'bus_data.dart';
 import 'bus_routes.dart';
 import 'widgets/status_card.dart';
@@ -149,7 +150,10 @@ class _BusPageState extends State<BusPage> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedBus,
@@ -160,10 +164,12 @@ class _BusPageState extends State<BusPage> {
                     ),
                     dropdownColor: AppColors.white,
                     items: allBusRoutes
-                        .map((route) => DropdownMenuItem(
-                              value: route.busTitle,
-                              child: Text(route.busTitle),
-                            ))
+                        .map(
+                          (route) => DropdownMenuItem(
+                            value: route.busTitle,
+                            child: Text(route.busTitle),
+                          ),
+                        )
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {
@@ -174,9 +180,18 @@ class _BusPageState extends State<BusPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              AdminControl(isbusRunning: _current.isRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
-              const SizedBox(height: 16),
-              StatusCard(data: _selectedRouteData, isRunning: _current.isRunning),
+              if (AuthService().isAdmin())
+                AdminControl(
+                  isbusRunning: _current.isRunning,
+                  onToggle: _handleToggle,
+                  onNextStoppage: _handleNextStoppage,
+                  onResetRoute: _handleResetRoute,
+                ),
+              if (AuthService().isAdmin()) const SizedBox(height: 16),
+              StatusCard(
+                data: _selectedRouteData,
+                isRunning: _current.isRunning,
+              ),
               const SizedBox(height: 16),
               RouteTimeline(stoppages: _current.routeStops),
               const SizedBox(height: 16),

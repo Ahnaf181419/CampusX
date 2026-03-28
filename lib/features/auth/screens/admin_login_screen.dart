@@ -138,13 +138,26 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   void _handleLogin() async {
     final authService = AuthService();
-    await authService.setFirstLaunchComplete();
-    
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeShell()),
+
+    try {
+      await authService.loginAsAdmin(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
+      await authService.setFirstLaunchComplete();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeShell()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 }
