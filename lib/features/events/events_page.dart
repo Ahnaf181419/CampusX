@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:campus_x/core/theme/app_colors.dart';
 import 'package:campus_x/core/theme/app_text_styles.dart';
 import 'package:campus_x/features/events/models/event_model.dart';
-import 'package:campus_x/features/events/widgets/event_filter_chips.dart';
 import 'package:campus_x/features/events/widgets/ongoing_event_card.dart';
 import 'package:campus_x/features/events/widgets/past_event_card.dart';
 
@@ -14,12 +14,6 @@ class EventsPage extends StatefulWidget {
 }
 
 class _EventsPageState extends State<EventsPage> {
-  EventFilter _selectedFilter = EventFilter.allEvents;
-
-  void _changeFilter(EventFilter filter) {
-    setState(() => _selectedFilter = filter);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,13 +30,6 @@ class _EventsPageState extends State<EventsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    EventFilterChips(
-                      selectedFilter: _selectedFilter,
-                      onFilterChanged: _changeFilter,
-                    ),
-
-                    const SizedBox(height: 20),
-
                     const Text(
                       'Ongoing Events',
                       style: AppTextStyles.headerSmall,
@@ -52,7 +39,10 @@ class _EventsPageState extends State<EventsPage> {
 
                     OngoingEventCard(
                       event: kOngoingEvent,
-                      onParticipate: () {},
+                      onParticipate: () => launchUrl(
+                        Uri.parse('https://www.facebook.com/AUSTPIC'),
+                        mode: LaunchMode.externalApplication,
+                      ),
                     ),
 
                     const SizedBox(height: 20),
