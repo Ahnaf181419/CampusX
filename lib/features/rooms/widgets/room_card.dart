@@ -63,7 +63,7 @@ class RoomCard extends StatelessWidget {
             // Book Now button — right-aligned
             Align(
               alignment: Alignment.centerRight,
-              child: _BookNowButton(onTap: onBookNow),
+              child: _BookNowButton(roomStatus: room.status, onTap: onBookNow),
             ),
           ],
         ),
@@ -96,24 +96,37 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _BookNowButton extends StatefulWidget {
-  const _BookNowButton({this.onTap});
+  const _BookNowButton({this.onTap, required this.roomStatus});
 
   final VoidCallback? onTap;
+  final RoomStatus roomStatus;
 
   @override
   State<_BookNowButton> createState() => _BookNowButtonState();
 }
 
 class _BookNowButtonState extends State<_BookNowButton> {
-  bool _booked = false;
+  late bool _booked;
+
+  @override
+  void initState() {
+    super.initState();
+    // If room is occupied, button starts as booked
+    _booked = widget.roomStatus == RoomStatus.occupied;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isRoomOccupied = widget.roomStatus == RoomStatus.occupied;
+    final isButtonDisabled = isRoomOccupied;
+
     return GestureDetector(
-      onTap: () {
-        setState(() => _booked = !_booked);
-        widget.onTap?.call();
-      },
+      onTap: isButtonDisabled
+          ? null
+          : () {
+              setState(() => _booked = !_booked);
+              widget.onTap?.call();
+            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeInOut,

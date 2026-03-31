@@ -57,8 +57,9 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color background =
-        isSelected ? AppColors.chipSelectedBg : AppColors.white;
+    final Color background = isSelected
+        ? AppColors.chipSelectedBg
+        : AppColors.white;
 
     final TextStyle labelStyle = isSelected
         ? AppTextStyles.bodyMedium.copyWith(

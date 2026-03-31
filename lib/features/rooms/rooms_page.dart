@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:campus_x/core/theme/app_colors.dart';
 import 'package:campus_x/core/theme/app_text_styles.dart';
 import 'package:campus_x/features/rooms/models/room_model.dart';
-import 'package:campus_x/features/rooms/widgets/date_button.dart';
+import 'package:campus_x/features/rooms/widgets/day_selector.dart';
 import 'package:campus_x/features/rooms/widgets/room_card.dart';
 import 'package:campus_x/features/rooms/widgets/room_filter_chips.dart';
 
@@ -15,16 +15,24 @@ class RoomsPage extends StatefulWidget {
 
 class _RoomsPageState extends State<RoomsPage> {
   RoomFilter _selectedFilter = RoomFilter.all;
+  late int _selectedDay;
+  String _searchQuery = '';
 
-  static const List<String> _dayNames = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
+  static const List<int> _workingDays = [
+    0,
+    1,
+    2,
+    3,
+    6,
+  ]; // Sun, Mon, Tue, Wed, Thu
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with today's day (0=Monday, 6=Sunday)
+    // DateTime.weekday: 1=Monday, 7=Sunday
+    _selectedDay = DateTime.now().weekday - 1;
+  }
 
   List<RoomModel> get _filteredRooms {
     return kDummyRooms.where((room) {
@@ -35,14 +43,18 @@ class _RoomsPageState extends State<RoomsPage> {
           room.type != RoomType.classRoom) {
         return false;
       }
+      if (_searchQuery.isNotEmpty &&
+          !room.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+        return false;
+      }
       return true;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final dayLabel = _dayNames[DateTime.now().weekday - 1];
     final rooms = _filteredRooms;
+    final isWeekend = !_workingDays.contains(_selectedDay);
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -57,68 +69,95 @@ class _RoomsPageState extends State<RoomsPage> {
                 children: [
                   const SizedBox(height: 14),
 
-                  // Date button
-                  DateButton(dayLabel: dayLabel),
+                  // Day selector
+                  DaySelector(
+                    selectedDay: _selectedDay,
+                    onDayChanged: (day) {
+                      setState(() => _selectedDay = day);
+                    },
+                  ),
 
                   const SizedBox(height: 14),
 
-                  // Search field (dummy — no filtering)
-                  TextField(
-                    readOnly: true,
-                    style: AppTextStyles.bodyMedium,
-                    decoration: InputDecoration(
-                      hintText: 'Search rooms...',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.ash,
+                  // Show "No Classes Today" message for weekends
+                  if (isWeekend)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Text(
+                          'No Classes Today',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ash,
+                          ),
+                        ),
                       ),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: AppColors.ash,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.ashLight),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.ashLight),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.black),
+                    )
+                  else ...[
+                    // Search field
+                    TextField(
+                      onChanged: (value) {
+                        setState(() => _searchQuery = value);
+                      },
+                      style: AppTextStyles.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: 'Search rooms...',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.ash,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: AppColors.ash,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: AppColors.ashLight,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: AppColors.ashLight,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.black),
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 14),
+                    const SizedBox(height: 14),
 
-                  // Filter chips
-                  RoomFilterChips(
-                    selectedFilter: _selectedFilter,
-                    onFilterChanged: (filter) {
-                      setState(() => _selectedFilter = filter);
-                    },
-                  ),
+                    // Filter chips
+                    RoomFilterChips(
+                      selectedFilter: _selectedFilter,
+                      onFilterChanged: (filter) {
+                        setState(() => _selectedFilter = filter);
+                      },
+                    ),
 
-                  const SizedBox(height: 14),
+                    const SizedBox(height: 14),
 
-                  // Room cards list
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: rooms.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return RoomCard(room: rooms[index]);
-                    },
-                  ),
+                    // Room cards list
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: rooms.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return RoomCard(room: rooms[index]);
+                      },
+                    ),
+                  ],
 
                   const SizedBox(height: 24),
                 ],

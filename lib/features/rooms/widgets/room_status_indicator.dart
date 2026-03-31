@@ -10,40 +10,29 @@ class RoomStatusIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (status) {
-      case RoomStatus.available:
-        return Text(
-          'Available',
+    if (status == RoomStatus.available) {
+      return Text(
+        'Available',
+        style: AppTextStyles.bodySmall.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.black,
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: AppColors.black,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          'Not Available',
           style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
+            fontWeight: FontWeight.bold,
+            color: AppColors.white,
           ),
-        );
-
-      case RoomStatus.bookedSoon:
-        return Text(
-          'Booked Soon',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.ash,
-          ),
-        );
-
-      case RoomStatus.occupied:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.black,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'Occupied',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.white,
-            ),
-          ),
-        );
+        ),
+      );
     }
   }
 }
