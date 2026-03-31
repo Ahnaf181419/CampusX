@@ -1,25 +1,16 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/repositories/bus_status_repository.dart';
+import '../../services/auth_service.dart';
 import 'bus_data.dart';
 import 'bus_routes.dart';
 import 'widgets/status_card.dart';
 import 'widgets/route_timeline.dart';
 import 'widgets/stop_list_item.dart';
 import 'widgets/admin_control.dart';
-
-class _BusState {
-  bool isRunning;
-  List<BusStop> routeStops;
-  List<bool> notifyPrefs;
-
-  _BusState({
-    required this.isRunning,
-    required this.routeStops,
-    required this.notifyPrefs,
-  });
-}
 
 class BusPage extends StatefulWidget {
   const BusPage({super.key});
@@ -29,28 +20,47 @@ class BusPage extends StatefulWidget {
 }
 
 class _BusPageState extends State<BusPage> {
-  late final Map<String, _BusState> _busStates;
+  final BusStatusRepository _repository = BusStatusRepository();
   late String _selectedBus;
 
-  _BusState get _current => _busStates[_selectedBus]!;
+  final Map<String, List<bool>> _notifyPrefs = {};
+
+  final _player = AudioPlayer();
+
+  List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
+  final Connectivity _connectivity = Connectivity();
 
   BusRouteData get _selectedRouteData =>
       allBusRoutes.firstWhere((r) => r.busTitle == _selectedBus);
 
-  final _player = AudioPlayer();
+  List<bool> get _currentNotifyPrefs => _notifyPrefs.putIfAbsent(
+    _selectedBus,
+    () => List.filled(_selectedRouteData.routeStops.length, false),
+  );
+
+  bool get _isOffline => _connectionStatus.contains(ConnectivityResult.none);
 
   @override
   void initState() {
     super.initState();
-    _busStates = {
-      for (final route in allBusRoutes)
-        route.busTitle: _BusState(
-          isRunning: false,
-          routeStops: List.of(route.routeStops),
-          notifyPrefs: List.filled(route.routeStops.length, false),
-        ),
-    };
     _selectedBus = allBusRoutes.first.busTitle;
+    _initConnectivity();
+    _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+  }
+
+  Future<void> _initConnectivity() async {
+    try {
+      final result = await _connectivity.checkConnectivity();
+      _updateConnectionStatus(result);
+    } catch (e) {
+      debugPrint('[BusPage] Connectivity check failed: $e');
+    }
+  }
+
+  void _updateConnectionStatus(List<ConnectivityResult> result) {
+    setState(() {
+      _connectionStatus = result;
+    });
   }
 
   @override
@@ -59,76 +69,145 @@ class _BusPageState extends State<BusPage> {
     super.dispose();
   }
 
+  List<BusStop> _buildStops(int currentStopIndex) {
+    final route = _selectedRouteData;
+    return [
+      for (int i = 0; i < route.routeStops.length; i++)
+        BusStop(
+          name: route.routeStops[i].name,
+          estimatedMinutes: route.routeStops[i].estimatedMinutes,
+          isActive: i <= currentStopIndex,
+        ),
+    ];
+  }
+
   Future<void> _playNotifySound() async {
     await _player.play(AssetSource('sounds/notify.mp3'));
   }
 
   void _handleNotifyToggled(int index, bool value) {
-    setState(() => _current.notifyPrefs[index] = value);
+    setState(() => _currentNotifyPrefs[index] = value);
   }
 
-  void _handleNextStoppage() {
-    final stops = _current.routeStops;
-    final nextIndex = stops.indexWhere((s) => !s.isActive);
-    if (nextIndex == -1) return;
-
-    setState(() {
-      _current.routeStops = [
-        for (int i = 0; i < stops.length; i++)
-          BusStop(
-            name: stops[i].name,
-            estimatedMinutes: stops[i].estimatedMinutes,
-            isActive: i <= nextIndex,
-          ),
-      ];
-    });
-
-    if (_current.notifyPrefs[nextIndex]) {
-      _playNotifySound();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.directions_bus, color: AppColors.white),
-              const SizedBox(width: 8),
-              Text('Bus reached ${_current.routeStops[nextIndex].name}'),
-            ],
-          ),
-          backgroundColor: AppColors.black,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
         ),
-      );
+        backgroundColor: Colors.red[700],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showOfflineWarning() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.wifi_off, color: AppColors.white),
+            SizedBox(width: 8),
+            Text('You are offline. Changes may not sync.'),
+          ],
+        ),
+        backgroundColor: Colors.orange[700],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _handleNextStoppage(int currentStopIndex) async {
+    if (_isOffline) {
+      _showOfflineWarning();
+      return;
+    }
+
+    final route = _selectedRouteData;
+    final nextIndex = currentStopIndex + 1;
+    if (nextIndex >= route.routeStops.length) return;
+
+    final result = await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: true,
+      currentStopIndex: nextIndex,
+    );
+
+    if (!result.isSuccess && mounted) {
+      _showErrorSnackBar(result.errorMessage ?? 'Failed to update bus status');
+      return;
+    }
+
+    if (_currentNotifyPrefs[nextIndex]) {
+      _playNotifySound();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.directions_bus, color: AppColors.white),
+                const SizedBox(width: 8),
+                Text('Bus reached ${route.routeStops[nextIndex].name}'),
+              ],
+            ),
+            backgroundColor: AppColors.black,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
-  void _handleToggle() {
-    setState(() {
-      _current.isRunning = !_current.isRunning;
-    });
+  Future<void> _handleToggle(
+    bool currentlyRunning,
+    int currentStopIndex,
+  ) async {
+    if (_isOffline) {
+      _showOfflineWarning();
+      return;
+    }
+
+    final result = await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: !currentlyRunning,
+      currentStopIndex: currentStopIndex,
+    );
+
+    if (!result.isSuccess && mounted) {
+      _showErrorSnackBar(result.errorMessage ?? 'Failed to toggle bus status');
+    }
   }
 
-  void _handleResetRoute() {
-    final route = _selectedRouteData;
-    setState(() {
-      _current.routeStops = [
-        BusStop(
-          name: route.routeStops[0].name,
-          estimatedMinutes: route.routeStops[0].estimatedMinutes,
-          isActive: true,
-        ),
-        for (int i = 1; i < route.routeStops.length; i++)
-          BusStop(
-            name: route.routeStops[i].name,
-            estimatedMinutes: route.routeStops[i].estimatedMinutes,
-            isActive: false,
-          ),
-      ];
-    });
+  Future<void> _handleResetRoute() async {
+    if (_isOffline) {
+      _showOfflineWarning();
+      return;
+    }
+
+    final result = await _repository.updateBusStatus(
+      busTitle: _selectedBus,
+      isRunning: false,
+      currentStopIndex: 0,
+    );
+
+    if (!result.isSuccess && mounted) {
+      _showErrorSnackBar(result.errorMessage ?? 'Failed to reset route');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = AuthService().isAdmin();
+
     return Scaffold(
       backgroundColor: AppColors.backgroundGrey,
       body: SafeArea(
@@ -137,6 +216,27 @@ class _BusPageState extends State<BusPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_isOffline)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.orange[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'You are offline. Real-time sync unavailable.',
+                        style: TextStyle(color: Colors.orange[900]),
+                      ),
+                    ],
+                  ),
+                ),
+
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.white,
@@ -149,7 +249,10 @@ class _BusPageState extends State<BusPage> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedBus,
@@ -160,10 +263,12 @@ class _BusPageState extends State<BusPage> {
                     ),
                     dropdownColor: AppColors.white,
                     items: allBusRoutes
-                        .map((route) => DropdownMenuItem(
-                              value: route.busTitle,
-                              child: Text(route.busTitle),
-                            ))
+                        .map(
+                          (route) => DropdownMenuItem(
+                            value: route.busTitle,
+                            child: Text(route.busTitle),
+                          ),
+                        )
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {
@@ -174,24 +279,107 @@ class _BusPageState extends State<BusPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              AdminControl(isbusRunning: _current.isRunning, onToggle: _handleToggle, onNextStoppage: _handleNextStoppage, onResetRoute: _handleResetRoute),
-              const SizedBox(height: 16),
-              StatusCard(data: _selectedRouteData, isRunning: _current.isRunning),
-              const SizedBox(height: 16),
-              RouteTimeline(stoppages: _current.routeStops),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  'Bus Stoppage List',
-                  style: AppTextStyles.headerSmall,
-                ),
-              ),
-              _UpcomingStopsCard(
-                busKey: _selectedBus,
-                stops: _current.routeStops,
-                notifyPrefs: _current.notifyPrefs,
-                onNotifyToggled: _handleNotifyToggled,
+
+              StreamBuilder<BusStatusData>(
+                stream: _repository.getBusStatus(_selectedBus),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[700],
+                            size: 48,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Failed to load bus status',
+                            style: TextStyle(
+                              color: Colors.red[900],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${snapshot.error}',
+                            style: TextStyle(
+                              color: Colors.red[700],
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: () => setState(() {}),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.black,
+                              foregroundColor: AppColors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final data = snapshot.data;
+                  final isRunning = data?.isRunning ?? false;
+                  final currentStopIndex = data?.currentStopIndex ?? 0;
+                  final stops = _buildStops(currentStopIndex);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isAdmin)
+                        AdminControl(
+                          isbusRunning: isRunning,
+                          onToggle: () =>
+                              _handleToggle(isRunning, currentStopIndex),
+                          onNextStoppage: () =>
+                              _handleNextStoppage(currentStopIndex),
+                          onResetRoute: _handleResetRoute,
+                        ),
+                      if (isAdmin) const SizedBox(height: 16),
+                      StatusCard(
+                        data: _selectedRouteData,
+                        isRunning: isRunning,
+                      ),
+                      const SizedBox(height: 16),
+                      RouteTimeline(stoppages: stops),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Bus Stoppage List',
+                          style: AppTextStyles.headerSmall,
+                        ),
+                      ),
+                      _UpcomingStopsCard(
+                        busKey: _selectedBus,
+                        stops: stops,
+                        notifyPrefs: _currentNotifyPrefs,
+                        onNotifyToggled: _handleNotifyToggled,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -238,7 +426,7 @@ class _UpcomingStopsCard extends StatelessWidget {
               onNotifyToggled: (val) => onNotifyToggled(i, val),
             ),
             if (i < stops.length - 1)
-              Divider(height: 1, color: AppColors.ashLight),
+              const Divider(height: 1, color: AppColors.ashLight),
           ],
         ],
       ),

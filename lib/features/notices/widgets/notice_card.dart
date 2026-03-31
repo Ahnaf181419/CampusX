@@ -24,46 +24,105 @@ class NoticeCard extends StatelessWidget {
   final NoticeModel notice;
   final ValueChanged<bool?> onCheckedChanged;
 
+  void _showDetail(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      notice.title,
+                      style: AppTextStyles.headerSmall,
+                    ),
+                  ),
+                  PriorityBadge(priority: notice.priority),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                notice.date,
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.ash),
+              ),
+              const Divider(height: 24, color: AppColors.ashLight),
+              Text(
+                notice.body.isNotEmpty
+                    ? notice.body
+                    : 'No additional details available for this notice.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.ash,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.black,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // ── Card shell: white background, rounded corners, subtle shadow ──
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.buttonInactive, width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.blackShadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        // Breathing room inside the card.
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ── Far left: checkbox ─────────────────────────────────────
-            _NoticeCheckbox(
-              isChecked: notice.isChecked,
-              onChanged: onCheckedChanged,
+    return GestureDetector(
+      onTap: () => _showDetail(context),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.buttonInactive, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.blackShadow,
+              blurRadius: 6,
+              offset: Offset(0, 2),
             ),
-
-            const SizedBox(width: 8),
-
-            // ── Middle: title and date/time column ─────────────────────
-            Expanded(
-              child: _NoticeTitleColumn(title: notice.title, date: notice.date),
-            ),
-
-            const SizedBox(width: 8),
-
-            // ── Far right: badge + action icons row ────────────────────
-            _NoticeActions(priority: notice.priority),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _NoticeCheckbox(
+                isChecked: notice.isChecked,
+                onChanged: onCheckedChanged,
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: _NoticeTitleColumn(title: notice.title, date: notice.date),
+              ),
+
+              const SizedBox(width: 8),
+
+              _NoticeActions(priority: notice.priority),
+            ],
+          ),
         ),
       ),
     );

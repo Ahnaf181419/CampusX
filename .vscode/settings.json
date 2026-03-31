@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/theno/CampusX/windows/runner"
+  "cmake.sourceDirectory": "C:/Users/theno/CampusX/windows/runner",
+  "cmake.ignoreCMakeListsMissing": true
 }

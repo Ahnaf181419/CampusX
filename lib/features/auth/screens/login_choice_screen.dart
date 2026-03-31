@@ -92,15 +92,10 @@ class LoginChoiceScreen extends StatelessWidget {
     }
   }
 
-  void _handleAdminTap(BuildContext context) async {
-    final authService = AuthService();
-    await authService.setUserType('admin');
-    
-    if (context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-      );
-    }
+  void _handleAdminTap(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+    );
   }
 }
